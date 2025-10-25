@@ -41,27 +41,21 @@ public class FileStorageService {
     }
 
     public CourseContent storeFile(MultipartFile file) {
-        // Validate file
         validateFile(file);
 
-        // Normalize file name
         String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
 
         try {
-            // Check if the file's name contains invalid characters
             if (originalFileName.contains("..")) {
                 throw new FileStorageException("Sorry! Filename contains invalid path sequence " + originalFileName);
             }
 
-            // Generate unique file name
             String fileExtension = getFileExtension(originalFileName);
             String newFileName = UUID.randomUUID() + "." + fileExtension;
 
-            // Copy file to the target location
             Path targetLocation = this.fileStorageLocation.resolve(newFileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-            // Save metadata to database
             CourseContent courseContent = new CourseContent();
             courseContent.setFileName(originalFileName);
             courseContent.setFileType(file.getContentType());
@@ -103,11 +97,9 @@ public class FileStorageService {
         CourseContent courseContent = getFileById(id);
 
         try {
-            // Delete physical file
             Path filePath = this.fileStorageLocation.resolve(courseContent.getFileUrl()).normalize();
             Files.deleteIfExists(filePath);
 
-            // Delete database record
             courseContentRepository.delete(courseContent);
 
         } catch (IOException ex) {
@@ -120,12 +112,10 @@ public class FileStorageService {
             throw new IllegalArgumentException("Failed to store empty file");
         }
 
-        // Check file size
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new IllegalArgumentException("File size exceeds maximum limit of 50MB");
         }
 
-        // Check file extension
         String fileName = file.getOriginalFilename();
         String fileExtension = getFileExtension(fileName);
 
